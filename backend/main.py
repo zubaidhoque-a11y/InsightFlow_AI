@@ -11,10 +11,11 @@ from backend.chart_generator import generate_charts
 load_dotenv()
 
 
+groq_model = os.getenv("GROQ_MODEL") or "openai/gpt-oss-120b"
 groq_key = os.getenv("GROQ_API_KEY") or "gsk_dummykey1234567890"
 
 llm = ChatGroq(
-    model="llama-3.3-70b-versatile",
+    model=groq_model,
     groq_api_key=groq_key,
     temperature=0,
 )
