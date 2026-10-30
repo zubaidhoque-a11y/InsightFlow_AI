@@ -44,18 +44,22 @@ function App() {
       const data = await response.json();
 
       if (!response.ok) {
-        throw new Error(
-          typeof data.detail === "string"
-            ? data.detail
-            : "The backend could not analyze this dataset."
-        );
+        let errorMessage = "The backend could not analyze this dataset.";
+        if (typeof data.detail === "string") {
+          errorMessage = data.detail;
+        } else if (Array.isArray(data.detail)) {
+          errorMessage = data.detail.map((err) => err.msg || JSON.stringify(err)).join(", ");
+        } else if (data.detail) {
+          errorMessage = JSON.stringify(data.detail);
+        }
+        throw new Error(errorMessage);
       }
 
       setResult(data);
     } catch (err) {
       setError(
         err.message === "Failed to fetch"
-          ? "Cannot reach FastAPI. Make sure your backend is running on port 8000."
+          ? "Cannot reach FastAPI. Make sure your backend is running."
           : err.message
       );
     } finally {
