@@ -1,7 +1,8 @@
+
 import { useRef, useState } from "react";
 import "./App.css";
 
-const API_URL = import.meta.env.VITE_API_URL || "https://insightflow-ai-5.onrender.com";
+const API_URL = import.meta.env.VITE_API_URL || "https://insightflow-ai-frontend.onrender.com";
 
 function App() {
   const fileInput = useRef(null);
@@ -54,7 +55,7 @@ function App() {
     } catch (err) {
       setError(
         err.message === "Failed to fetch"
-          ? "Cannot reach FastAPI. Make sure your backend is running."
+          ? "Cannot reach FastAPI. Make sure your backend is running on port 8000."
           : err.message
       );
     } finally {
@@ -127,8 +128,8 @@ function App() {
         <div className="sidebar-footer">
           <span className="online-dot" />
           <div>
-            <strong>Deployed API</strong>
-            <small>Render connection</small>
+            <strong>Local API</strong>
+            <small>FastAPI connection</small>
           </div>
         </div>
       </aside>
@@ -253,7 +254,7 @@ function App() {
             </button>
 
             <div className="secure-note">
-              ⌑ &nbsp; Processed through your backend
+              ⌑ &nbsp; Processed through your local backend
             </div>
           </form>
 
@@ -422,6 +423,7 @@ function App() {
           </section>
         )}
 
+        {/* Footer with developer credit */}
         <footer className="footer">
           <span>✳ InsightFlow AI</span>
 
@@ -467,3 +469,4 @@ function Metric({ label, value, icon }) {
 }
 
 export default App;
+
