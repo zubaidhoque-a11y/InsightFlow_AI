@@ -1,4 +1,3 @@
-
 import os
 from typing_extensions import TypedDict
 
@@ -12,15 +11,13 @@ from backend.chart_generator import generate_charts
 load_dotenv()
 
 
-# Initialize the Groq LLM
 llm = ChatGroq(
-    model="openai/gpt-oss-120b",
+    model="llama-3.3-70b-versatile",
     groq_api_key=os.getenv("GROQ_API_KEY"),
     temperature=0,
 )
 
 
-# Define the shared workflow state
 class InsightFlowState(TypedDict):
     question: str
     answer: str
@@ -28,13 +25,11 @@ class InsightFlowState(TypedDict):
     chart_paths: list[str]
 
 
-# AI agent for general questions
 def ai_agent(state: InsightFlowState):
     response = llm.invoke(state["question"])
     return {"answer": response.content}
 
 
-# Agent for analyzing the uploaded CSV
 def csv_agent(state: InsightFlowState):
     answer = analyze_csv(
         state["csv_path"],
@@ -44,7 +39,6 @@ def csv_agent(state: InsightFlowState):
     return {"answer": answer}
 
 
-# Choose the appropriate agent
 def route_question(state: InsightFlowState):
     if state.get("csv_path", "").strip():
         return "csv_agent"
@@ -52,13 +46,11 @@ def route_question(state: InsightFlowState):
     return "ai_agent"
 
 
-# Agent that generates actual chart image files
 def chart_agent(state: InsightFlowState):
     csv_path = state["csv_path"]
 
     generated_paths = generate_charts(csv_path) or []
 
-    # Keep only valid PNG files
     valid_paths = [
         os.path.abspath(path)
         for path in generated_paths
@@ -67,13 +59,9 @@ def chart_agent(state: InsightFlowState):
         and os.path.isfile(path)
     ]
 
-    print("Generated chart paths:", valid_paths)
-
-    # IMPORTANT: The key must be chart_paths, not chart_path
     return {"chart_paths": valid_paths}
 
 
-# Build the LangGraph workflow
 graph = StateGraph(InsightFlowState)
 
 graph.add_node("ai_agent", ai_agent)
@@ -96,7 +84,6 @@ graph.add_edge("chart_agent", END)
 workflow = graph.compile()
 
 
-# Run directly from the terminal when needed
 if __name__ == "__main__":
     question = input("Ask InsightFlow AI: ")
     csv_path = input("Enter CSV path (or press Enter to skip): ")
