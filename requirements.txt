@@ -1,4 +1,4 @@
-
+uvicorn
 langgraph
 langchain
 langchain-groq
