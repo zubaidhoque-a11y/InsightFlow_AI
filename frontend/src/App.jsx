@@ -1,8 +1,7 @@
-
 import { useRef, useState } from "react";
 import "./App.css";
 
-const API_URL = import.meta.env.VITE_API_URL || "https://insightflow-ai-frontend.onrender.com";
+const API_URL = (import.meta.env.VITE_API_URL || "https://insightflow-ai-5.onrender.com").replace(/\/+$/, "");
 
 function App() {
   const fileInput = useRef(null);
@@ -35,31 +34,43 @@ function App() {
     formData.append("file", file);
     formData.append("question", question.trim());
 
+    const targetUrl = `${API_URL}/analyze`;
+    console.log("Sending analysis request to:", targetUrl);
+
     try {
-      const response = await fetch(`${API_URL}/analyze`, {
+      const response = await fetch(targetUrl, {
         method: "POST",
         body: formData,
       });
 
-      const data = await response.json();
+      console.log("Response status:", response.status, response.statusText);
+
+      const responseText = await response.text();
+      let data;
+      try {
+        data = JSON.parse(responseText);
+      } catch (parseErr) {
+        throw new Error(`Server returned non-JSON response (HTTP ${response.status}): ${responseText.slice(0, 150)}`);
+      }
 
       if (!response.ok) {
-        let errorMessage = "The backend could not analyze this dataset.";
+        let errMessage = `Server error (HTTP ${response.status})`;
         if (typeof data.detail === "string") {
-          errorMessage = data.detail;
+          errMessage = data.detail;
         } else if (Array.isArray(data.detail)) {
-          errorMessage = data.detail.map((err) => err.msg || JSON.stringify(err)).join(", ");
-        } else if (data.detail) {
-          errorMessage = JSON.stringify(data.detail);
+          errMessage = data.detail.map((e) => e.msg || JSON.stringify(e)).join(", ");
+        } else if (data.error) {
+          errMessage = data.error;
         }
-        throw new Error(errorMessage);
+        throw new Error(errMessage);
       }
 
       setResult(data);
     } catch (err) {
+      console.error("Analysis error:", err);
       setError(
         err.message === "Failed to fetch"
-          ? "Cannot reach FastAPI. Make sure your backend is running."
+          ? `Cannot reach backend at ${API_URL}. Check network connection or CORS.`
           : err.message
       );
     } finally {
@@ -132,8 +143,8 @@ function App() {
         <div className="sidebar-footer">
           <span className="online-dot" />
           <div>
-            <strong>Local API</strong>
-            <small>FastAPI connection</small>
+            <strong>API Connection</strong>
+            <small>{API_URL}</small>
           </div>
         </div>
       </aside>
@@ -258,7 +269,7 @@ function App() {
             </button>
 
             <div className="secure-note">
-              ⌑ &nbsp; Processed through your local backend
+              ⌑ &nbsp; Processed through your backend
             </div>
           </form>
 
@@ -409,25 +420,28 @@ function App() {
                 </div>
 
                 <div className="charts-grid">
-                  {result.charts.map((chart, index) => (
-                    <article
-                      className="panel chart-panel"
-                      key={`${chart}-${index}`}
-                    >
-                      <h3>Visualization {index + 1}</h3>
-                      <img
-                        src={chart.startsWith("http") ? chart : `${API_URL}/${chart.replace(/^\/+/, "")}`}
-                        alt={`Dataset visualization ${index + 1}`}
-                      />
-                    </article>
-                  ))}
+                  {result.charts.map((chart, index) => {
+                    const cleanPath = chart.replace(/^\/+/, "");
+                    const chartUrl = cleanPath.startsWith("http") ? cleanPath : `${API_URL}/${cleanPath}`;
+                    return (
+                      <article
+                        className="panel chart-panel"
+                        key={`${chart}-${index}`}
+                      >
+                        <h3>Visualization {index + 1}</h3>
+                        <img
+                          src={chartUrl}
+                          alt={`Dataset visualization ${index + 1}`}
+                        />
+                      </article>
+                    );
+                  })}
                 </div>
               </div>
             )}
           </section>
         )}
 
-        {/* Footer with developer credit */}
         <footer className="footer">
           <span>✳ InsightFlow AI</span>
 
@@ -473,4 +487,3 @@ function Metric({ label, value, icon }) {
 }
 
 export default App;
-
