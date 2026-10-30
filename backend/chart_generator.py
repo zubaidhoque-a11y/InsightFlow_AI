@@ -1,6 +1,8 @@
 import os
-import pandas as pd
+import matplotlib
+matplotlib.use("Agg")
 import matplotlib.pyplot as plt
+import pandas as pd
 
 
 BACKEND_FOLDER = os.path.dirname(os.path.abspath(__file__))
@@ -24,85 +26,59 @@ def generate_charts(csv_path):
         path = os.path.abspath(os.path.join(OUTPUT_FOLDER, filename))
         plt.savefig(path, bbox_inches="tight", dpi=150)
         plt.close()
-        chart_paths.append(path)
+        if path not in chart_paths:
+            chart_paths.append(path)
 
-    if numeric_columns:
-        column = (
-            "temperature"
-            if "temperature" in numeric_columns
-            else numeric_columns[0]
-        )
-
-        values = df[column].dropna()
-
+    for i, col in enumerate(numeric_columns[:4]):
+        values = df[col].dropna()
         if not values.empty:
             plt.figure(figsize=(8, 5))
-            plt.hist(values, bins=20, edgecolor="black")
-            plt.title(f"Distribution of {column}")
-            plt.xlabel(column)
+            plt.hist(values, bins=25, edgecolor="black", color="#4f46e5", alpha=0.8)
+            plt.title(f"Distribution of {col}")
+            plt.xlabel(col)
             plt.ylabel("Frequency")
             plt.tight_layout()
-            save_chart("histogram.png")
+            save_chart(f"histogram_{i}_{col}.png")
 
-    if "machine_failure" in df.columns:
-        counts = (
-            df["machine_failure"]
-            .fillna("Missing")
-            .astype(str)
-            .value_counts()
-            .sort_index()
-        )
-        column = "machine_failure"
-    elif text_columns:
-        column = text_columns[0]
-        counts = (
-            df[column]
-            .fillna("Missing")
-            .astype(str)
-            .value_counts()
-            .head(10)
-        )
-    else:
-        counts = None
+    for i, col in enumerate(text_columns[:3]):
+        counts = df[col].fillna("Missing").astype(str).value_counts().head(10)
+        if not counts.empty:
+            plt.figure(figsize=(9, 5))
+            plt.bar(counts.index.astype(str), counts.values, color="#06b6d4", alpha=0.85)
+            plt.title(f"Top Categories for {col}")
+            plt.xlabel(col)
+            plt.ylabel("Count")
+            plt.xticks(rotation=45, ha="right")
+            plt.tight_layout()
+            save_chart(f"bar_chart_{i}_{col}.png")
 
-    if counts is not None and not counts.empty:
-        plt.figure(figsize=(8, 5))
-        plt.bar(counts.index.astype(str), counts.values)
-        plt.title(f"Counts for {column}")
-        plt.xlabel(column)
-        plt.ylabel("Count")
-        plt.xticks(rotation=45, ha="right")
-        plt.tight_layout()
-        save_chart("bar_chart.png")
-
-        plt.figure(figsize=(7, 7))
-        plt.pie(
-            counts.values,
-            labels=counts.index.astype(str),
-            autopct="%1.1f%%",
-            startangle=140,
-        )
-        plt.title(f"Proportion of {column}")
-        plt.tight_layout()
-        save_chart("pie_chart.png")
+            plt.figure(figsize=(7, 7))
+            plt.pie(
+                counts.values,
+                labels=counts.index.astype(str),
+                autopct="%1.1f%%",
+                startangle=140,
+            )
+            plt.title(f"Proportion of {col}")
+            plt.tight_layout()
+            save_chart(f"pie_chart_{i}_{col}.png")
 
     if len(numeric_columns) >= 2:
-        x_col = numeric_columns[0]
-        y_col = numeric_columns[1]
-        subset = df[[x_col, y_col]].dropna()
-
-        if not subset.empty:
-            plt.figure(figsize=(8, 5))
-            plt.scatter(subset[x_col], subset[y_col], alpha=0.6, edgecolor="k")
-            plt.title(f"{y_col} vs {x_col}")
-            plt.xlabel(x_col)
-            plt.ylabel(y_col)
-            plt.tight_layout()
-            save_chart("scatter_plot.png")
+        for i in range(min(3, len(numeric_columns) - 1)):
+            x_col = numeric_columns[i]
+            y_col = numeric_columns[i + 1]
+            subset = df[[x_col, y_col]].dropna()
+            if not subset.empty:
+                plt.figure(figsize=(8, 5))
+                plt.scatter(subset[x_col], subset[y_col], alpha=0.6, color="#ec4899", edgecolor="k")
+                plt.title(f"{y_col} vs {x_col}")
+                plt.xlabel(x_col)
+                plt.ylabel(y_col)
+                plt.tight_layout()
+                save_chart(f"scatter_{i}_{x_col}_vs_{y_col}.png")
 
     if len(numeric_columns) >= 2:
         correlation = df[numeric_columns].corr()
-
         plt.figure(figsize=(10, 8))
         plt.imshow(
             correlation,
@@ -112,7 +88,6 @@ def generate_charts(csv_path):
             aspect="auto",
         )
         plt.colorbar(label="Correlation")
-
         plt.xticks(
             range(len(correlation.columns)),
             correlation.columns,
@@ -123,10 +98,9 @@ def generate_charts(csv_path):
             range(len(correlation.columns)),
             correlation.columns,
         )
-
         plt.title("Correlation Heatmap")
         plt.tight_layout()
-        save_chart("heatmap.png")
+        save_chart("correlation_heatmap.png")
 
     return chart_paths
 

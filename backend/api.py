@@ -1,4 +1,3 @@
-
 import os
 import uuid
 
@@ -12,10 +11,9 @@ from backend.main import workflow
 
 app = FastAPI(title="InsightFlow AI")
 
-# Allow React to connect to FastAPI
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:5173"],
+    allow_origins=["*"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -30,7 +28,7 @@ os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 os.makedirs(CHART_FOLDER, exist_ok=True)
 
 app.mount(
-    "/charts",
+    "/generated_charts",
     StaticFiles(directory=CHART_FOLDER),
     name="charts",
 )
@@ -88,13 +86,10 @@ async def analyze(
             chart_name = os.path.basename(chart_path)
             actual_path = os.path.join(CHART_FOLDER, chart_name)
 
-            # Only return files that really exist in the chart folder
             if os.path.isfile(actual_path):
                 chart_urls.append(
-                    f"http://localhost:8000/charts/{chart_name}"
+                    f"generated_charts/{chart_name}"
                 )
-
-        print("Charts returned by API:", chart_urls)
 
         return {
             "filename": file.filename,
@@ -131,6 +126,3 @@ async def analyze(
 
     finally:
         await file.close()
-
-
-
